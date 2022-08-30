@@ -238,12 +238,12 @@ option of @command{guix system}.\n")
              (or (and keyfile
                       (zero? (system*/tty
                               #$(file-append cryptsetup-static "/sbin/cryptsetup")
-                              "open" "--type" "luks"
+                              "open" "--type" "luks" "--allow-discards"
                               "--key-file" keyfile
                               partition #$target)))
                  (zero? (system*/tty
                          #$(file-append cryptsetup-static "/sbin/cryptsetup")
-                         "open" "--type" "luks"
+                         "open" "--type" "luks" "--allow-discards"
                          partition #$target)))))))))
 
 (define (close-luks-device source targets)
