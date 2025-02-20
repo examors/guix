@@ -163,24 +163,32 @@ included code is safe.")
 (define-public rust-brotli-decompressor-4
   (package
     (name "rust-brotli-decompressor")
-    (version "4.0.1")
+    (version "4.0.2")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "brotli-decompressor" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0qn39c7n6wm40i2bm0d3q2qslmaavlh804iv0ccbba4m80pbsics"))))
+        (base32 "0dqb0vbhrc77c09qf6qmbylgkfnbjaq8629qp0z42gc0gnnhbykl"))))
     (build-system cargo-build-system)
     (arguments
-     `(#:tests? #f      ; not all test files included
+     `(#:skip-build? #t
        #:cargo-inputs (("rust-alloc-no-stdlib" ,rust-alloc-no-stdlib-2)
                        ("rust-alloc-stdlib" ,rust-alloc-stdlib-0.2))))
     (home-page "https://github.com/dropbox/rust-brotli-decompressor")
-    (synopsis "Brotli decompressor")
-    (description "This package provides a brotli decompressor with no
-dependency on the rust stdlib.  This makes it suitable for embedded devices
-and kernels.")
+    (synopsis
+     "brotli decompressor that with an interface avoiding the rust stdlib. This makes it suitable for embedded devices and kernels. It is designed with a pluggable allocator so that the standard lib's allocator may be employed. The default build also includes a stdlib allocator and stream interface. Disable this with --features=no-stdlib. Alternatively, --features=unsafe turns off array bounds checks and memory initialization but provides a safe interface for the caller.  Without adding the --features=unsafe argument, all included code is safe. For compression in addition to this library, download https://github.com/dropbox/rust-brotli")
+    (description
+     "This package provides a brotli decompressor that with an interface avoiding the
+rust stdlib.  This makes it suitable for embedded devices and kernels.  It is
+designed with a pluggable allocator so that the standard lib's allocator may be
+employed.  The default build also includes a stdlib allocator and stream
+interface.  Disable this with --features=no-stdlib.  Alternatively,
+--features=unsafe turns off array bounds checks and memory initialization but
+provides a safe interface for the caller.  Without adding the --features=unsafe
+argument, all included code is safe.  For compression in addition to this
+library, download https://github.com/dropbox/rust-brotli.")
     (license (list license:bsd-3 license:expat))))
 
 (define-public rust-brotli-decompressor-2

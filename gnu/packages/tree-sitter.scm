@@ -28,6 +28,7 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages crates-graphics)
   #:use-module (gnu packages crates-io)
+  #:use-module (gnu packages crates-vcs)
   #:use-module (gnu packages crates-web)
   #:use-module (gnu packages graphviz)
   #:use-module (gnu packages icu4c)
@@ -124,7 +125,10 @@ Tree-sitter parsing library.")
            #:tests? #f ; there are no tests for the runtime library
            #:make-flags
            #~(list (string-append "PREFIX=" #$output)
-                   (string-append "CC=" #$(cc-for-target)))))
+                   (string-append "CC=" #$(cc-for-target)))
+           #:strip-flags #~(list "--strip-unneeded"
+                                 "--enable-deterministic-archives"
+                                 "--keep-symbol=_ts_dup")))
     (home-page "https://tree-sitter.github.io/tree-sitter/")
     (synopsis "Incremental parsing system for programming tools")
     (description
@@ -155,11 +159,17 @@ This package includes the @code{libtree-sitter} runtime library.")
                #~(begin
                    ;; Remove the runtime library code and dynamically link to
                    ;; it instead.
-                   (delete-file-recursively "lib/src")
                    (delete-file "lib/binding_rust/build.rs")
                    (with-output-to-file "lib/binding_rust/build.rs"
                      (lambda _
-                       (format #t "fn main() {~@
+                       (format #t "use std::{env, fs, path::PathBuf};~@
+                              fn main() {~@
+                              let out_dir = PathBuf::from(env::var(\"OUT_DIR\").unwrap());~@
+                              fs::copy(~@
+                                  \"src/wasm/stdlib-symbols.txt\",~@
+                                  out_dir.join(\"stdlib-symbols.txt\"),~@
+                              )~@
+                              .unwrap();~@
                               println!(\"cargo:rustc-link-lib=tree-sitter\");~@
                               }~%")))))))
     (build-system cargo-build-system)
@@ -177,43 +187,62 @@ This package includes the @code{libtree-sitter} runtime library.")
          ;; complete as running all tests from tree-sitter-cli, but it's a
          ;; good compromise compared to maintaining two different sets of
          ;; grammars (Guix packages vs test fixtures).
+         "--skip=tests::async_context_test"
          "--skip=tests::corpus_test"
+         "--skip=tests::detect_language"
          "--skip=tests::github_issue_test"
          "--skip=tests::highlight_test"
+         "--skip=tests::language_test"
          "--skip=tests::node_test"
          "--skip=tests::parser_test"
+         "--skip=tests::parser_hang_test"
          "--skip=tests::pathological_test"
          "--skip=tests::query_test"
          "--skip=tests::tags_test"
          "--skip=tests::test_highlight_test"
          "--skip=tests::test_tags_test"
+         "--skip=tests::text_provider_test"
          "--skip=tests::tree_test")
       ;; We're only packaging the CLI program so we do not need to install
       ;; sources.
       #:install-source? #f
       #:cargo-inputs
-      `(("rust-ansi-term" ,rust-ansi-term-0.12)
+      `(("rust-ansi-colours" ,rust-ansi-colours-1)
+        ("rust-ansi-term" ,rust-ansi-term-0.12)
         ("rust-anyhow" ,rust-anyhow-1)
         ("rust-atty" ,rust-atty-0.2)
+        ("rust-bindgen" ,rust-bindgen-0.71)
+        ("rust-bstr" ,rust-bstr-1)
         ("rust-clap" ,rust-clap-2)
+        ("rust-clap-complete-nushell" ,rust-clap-complete-nushell-4)
         ("rust-difference" ,rust-difference-2)
         ("rust-dirs" ,rust-dirs-3)
+        ("rust-etcetera" ,rust-etcetera-0.8)
+        ("rust-fs4" ,rust-fs4-0.12)
+        ("rust-git2" ,rust-git2-0.20)
         ("rust-html-escape" ,rust-html-escape-0.2)
         ("rust-libloading" ,rust-libloading-0.7)
+        ("rust-notify" ,rust-notify-8)
+        ("rust-notify-debouncer-full" ,rust-notify-debouncer-full-0.5)
         ("rust-path-slash" ,rust-path-slash-0.2)
         ("rust-rand" ,rust-rand-0.8)
         ("rust-rustc-hash" ,rust-rustc-hash-1)
         ("rust-semver" ,rust-semver-1)
+        ("rust-similar" ,rust-similar-2)
         ("rust-smallbitvec" ,rust-smallbitvec-2)
+        ("rust-streaming-iterator" ,rust-streaming-iterator-0.1)
         ("rust-thiserror" ,rust-thiserror-1)
         ("rust-tiny-http" ,rust-tiny-http-0.12)
         ("rust-toml" ,rust-toml-0.5)
+        ("rust-ureq" ,rust-ureq-3)
         ("rust-walkdir" ,rust-walkdir-2)
-        ("rust-webbrowser" ,rust-webbrowser-0.8)
+        ("rust-wasmparser" ,rust-wasmparser-0.224)
+        ("rust-wasmtime-c-api-impl" ,rust-wasmtime-c-api-impl-29)
+        ("rust-webbrowser" ,rust-webbrowser-1)
         ("rust-which" ,rust-which-4))
       #:cargo-development-inputs
-      `(("rust-ctor" ,rust-ctor-0.1)
-        ("rust-pretty-assertions" ,rust-pretty-assertions-0.7)
+      `(("rust-ctor" ,rust-ctor-0.2)
+        ("rust-pretty-assertions" ,rust-pretty-assertions-1)
         ("rust-rand" ,rust-rand-0.8)
         ("rust-tempfile" ,rust-tempfile-3)
         ("rust-unindent" ,rust-unindent-0.2))
@@ -221,16 +250,29 @@ This package includes the @code{libtree-sitter} runtime library.")
       #~(modify-phases %standard-phases
           (add-after 'unpack 'patch-node
             (lambda _
-              (substitute* "cli/src/generate/mod.rs"
-                (("Command::new\\(\"node\"\\)")
+              (substitute* "cli/src/main.rs"
+                (("default_value = \"node\"")
                  (string-append
-                  "Command::new(\"" #$node-lts "/bin/node\")")))))
+                  "default_value = \"" #$node-lts "/bin/node\"")))))
           (add-after 'unpack 'patch-dot
             (lambda _
               (substitute* "cli/src/util.rs"
                 (("Command::new\\(\"dot\"\\)")
                  (string-append
                   "Command::new(\"" #$graphviz "/bin/dot\")")))))
+          (add-after 'unpack 'patch-dup
+            (lambda _
+              ;(substitute* "lib/Cargo.toml"
+              ;  (("streaming-iterator") all)
+              ;   (string-append all "\nlibc"))))
+              (substitute* "lib/Cargo.toml"
+                (("streaming-iterator = .*" all)
+                 (string-append all "\nlibc = \"^0.2.169\"")))
+              (substitute* "lib/binding_rust/lib.rs"
+                (("use std::os::fd::AsRawFd;" all)
+                 (string-append all "\nuse libc::dup;"))
+                (("ffi::_ts_dup")
+                 "libc::dup"))))
           (replace 'install
             (lambda _
               (let ((bin (string-append #$output "/bin")))
@@ -372,14 +414,14 @@ which will be used as a snippet in origin."
 (define-public tree-sitter-c
   (tree-sitter-grammar
    "c" "C"
-   "00mhz2rz98pxssgyhm0iymgcb8cbv8slsf3nmfgyjhfchpmb9n6z"
-   "0.20.6"))
+   "1vw7jd3wrb4vnigfllfmqxa8fwcpvgp1invswizz0grxv249piza"
+   "0.23.5"))
 
 (define-public tree-sitter-cpp
   (tree-sitter-grammar
    "cpp" "C++"
-   "0fsb6la0da3azh7m9p1w3w079bpg6074dy8jisjw1yq1w1r9grxy"
-   "0.20.3"
+   "0sbvvfa718qrjmfr53p8x3q2c19i4vhw0n20106c8mrvpsxm7zml"
+   "0.23.4"
    #:inputs (list tree-sitter-c)))
 
 (define-public tree-sitter-cmake
@@ -544,8 +586,8 @@ which will be used as a snippet in origin."
 (define-public tree-sitter-python
   (tree-sitter-grammar
    "python" "Python"
-   "1sxz3npk3mq86abcnghfjs38nzahx7nrn3wdh8f8940hy71d0pvi"
-   "0.20.4"))
+   "0a108sfqcsxrp54lapk7k3kq6fmz8745z5q99wpn3i1cqpi9slzg"
+   "0.23.6"))
 
 (define-public tree-sitter-r
   ;; No tags

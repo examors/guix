@@ -1255,17 +1255,17 @@ grammars and BER/DER encodings, for example.")
 (define-public rust-rustls-0.23
   (package
     (name "rust-rustls")
-    (version "0.23.19")
+    (version "0.23.23")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "rustls" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "1lgqjf1vh09kghyj34a4svn1max18pmhka6bwbxb61mv61240jwk"))))
+        (base32 "15gk2bmry78cps3ya38a7cn4jxc36xv1r7gndr0fbz40qjc6qya7"))))
     (build-system cargo-build-system)
     (arguments
-     `(#:tests? #f      ; Not all files included.
+     `(#:skip-build? #t
        #:cargo-inputs (("rust-aws-lc-rs" ,rust-aws-lc-rs-1)
                        ("rust-brotli" ,rust-brotli-7)
                        ("rust-brotli-decompressor" ,rust-brotli-decompressor-4)
@@ -1278,23 +1278,11 @@ grammars and BER/DER encodings, for example.")
                        ("rust-rustversion" ,rust-rustversion-1)
                        ("rust-subtle" ,rust-subtle-2)
                        ("rust-zeroize" ,rust-zeroize-1)
-                       ("rust-zlib-rs" ,rust-zlib-rs-0.4))
-       #:cargo-development-inputs
-       (("rust-base64" ,rust-base64-0.22)
-        ("rust-bencher" ,rust-bencher-0.1)
-        ("rust-env-logger" ,rust-env-logger-0.10)
-        ("rust-hex" ,rust-hex-0.4)
-        ("rust-log" ,rust-log-0.4)
-        ("rust-num-bigint" ,rust-num-bigint-0.4)
-        ("rust-rcgen" ,rust-rcgen-0.13)
-        ("rust-serde" ,rust-serde-1)
-        ("rust-serde-json" ,rust-serde-json-1)
-        ("rust-time" ,rust-time-0.3)
-        ("rust-webpki-roots" ,rust-webpki-roots-0.26))))
+                       ("rust-zlib-rs" ,rust-zlib-rs-0.4))))
     (home-page "https://github.com/rustls/rustls")
-    (synopsis "Modern TLS library written in Rust")
+    (synopsis "Rustls is a modern TLS library written in Rust")
     (description
-     "This package provides a modern TLS library written in Rust.")
+     "This package provides Rustls is a modern TLS library written in Rust.")
     (license (list license:asl2.0 license:isc license:expat))))
 
 (define-public rust-rustls-0.22
@@ -1746,28 +1734,22 @@ PEM-encodings commonly used to store keys and certificates at rest.")
 (define-public rust-rustls-pki-types-1
   (package
     (name "rust-rustls-pki-types")
-    (version "1.10.1")
+    (version "1.11.0")
     (source
      (origin
        (method url-fetch)
        (uri (crate-uri "rustls-pki-types" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "0dqb3d0cbld1yrp084wyzgw6yk3qzzic8l5pbs1b6bcjzzk4ggyj"))
-       (snippet
-        #~(begin (use-modules (guix build utils))
-                 (substitute* "Cargo.toml"
-                   (("\"=([[:digit:]]+(\\.[[:digit:]]+)*)" _ version)
-                    (string-append "\"^" version)))))))
+        (base32 "0755isc0x5iymm3wsn59s0ad1pm9zidw7p34qfqlsjsac9jf4z4i"))))
     (build-system cargo-build-system)
     (arguments
-     `(#:cargo-inputs (("rust-web-time" ,rust-web-time-1))
-       #:cargo-development-inputs (("rust-crabgrind" ,rust-crabgrind-0.1))))
-    (native-inputs (list valgrind))
+     `(#:skip-build? #t
+       #:cargo-inputs (("rust-web-time" ,rust-web-time-1))))
     (home-page "https://github.com/rustls/pki-types")
     (synopsis "Shared types for the rustls PKI ecosystem")
     (description
-     "This crate provides shared types for the rustls PKI ecosystem.")
+     "This package provides Shared types for the rustls PKI ecosystem.")
     (license (list license:expat license:asl2.0))))
 
 (define-public rust-rustls-platform-verifier-0.5
