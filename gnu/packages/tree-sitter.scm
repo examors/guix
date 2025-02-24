@@ -28,6 +28,7 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages crates-graphics)
   #:use-module (gnu packages crates-io)
+  #:use-module (gnu packages crates-vcs)
   #:use-module (gnu packages crates-web)
   #:use-module (gnu packages graphviz)
   #:use-module (gnu packages icu4c)
@@ -101,16 +102,16 @@ Tree-sitter parsing library.")
 (define-public tree-sitter
   (package
     (name "tree-sitter")
-    (version "0.20.10")                 ;untagged
+    (version "0.25.2")
     (source (origin
               (method git-fetch)
               (uri (git-reference
                     (url "https://github.com/tree-sitter/tree-sitter")
-                    (commit "0e4ff0bb27edf37b76fc7d35aa768b02cf4392ad")))
+                    (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1bai4gdhf8w5p1i9np2kl2ms0jq6rgq98qpiipipzayb9jjjlxcy"))
+                "1bnc6drz5r5h49n42vc8i7971986ib22qyclqpcfzg3zshr2a698"))
               (modules '((guix build utils)))
               (snippet #~(begin
                            ;; Remove bundled ICU parts
@@ -192,28 +193,44 @@ This package includes the @code{libtree-sitter} runtime library.")
       ;; sources.
       #:install-source? #f
       #:cargo-inputs
-      `(("rust-ansi-term" ,rust-ansi-term-0.12)
+      `(("rust-ansi-colours" ,rust-ansi-colours-1)
+        ("rust-ansi-term" ,rust-ansi-term-0.12)
         ("rust-anyhow" ,rust-anyhow-1)
         ("rust-atty" ,rust-atty-0.2)
+        ("rust-bstr" ,rust-bstr-1)
+        ("rust-cc" ,rust-cc-1)
         ("rust-clap" ,rust-clap-2)
+        ("rust-clap-complete-nushell" ,rust-clap-complete-nushell-4)
+        ("rust-ctor" ,rust-ctor-0.2)
         ("rust-difference" ,rust-difference-2)
         ("rust-dirs" ,rust-dirs-3)
+        ("rust-etcetera" ,rust-etcetera-0.8)
+        ("rust-fs4" ,rust-fs4-0.12)
+        ("rust-git2", rust-git2-0.20)
         ("rust-html-escape" ,rust-html-escape-0.2)
         ("rust-libloading" ,rust-libloading-0.7)
+        ("rust-notify" ,rust-notify-8)
+        ("rust-notify-debouncer-full" ,rust-notify-debouncer-full-0.5)
         ("rust-path-slash" ,rust-path-slash-0.2)
         ("rust-rand" ,rust-rand-0.8)
         ("rust-rustc-hash" ,rust-rustc-hash-1)
         ("rust-semver" ,rust-semver-1)
+        ("rust-similar" ,rust-similar-2)
         ("rust-smallbitvec" ,rust-smallbitvec-2)
+        ("rust-streaming-iterator" ,rust-streaming-iterator-0.1)
         ("rust-thiserror" ,rust-thiserror-1)
         ("rust-tiny-http" ,rust-tiny-http-0.12)
         ("rust-toml" ,rust-toml-0.5)
+        ("rust-ureq" ,rust-ureq-3)
         ("rust-walkdir" ,rust-walkdir-2)
-        ("rust-webbrowser" ,rust-webbrowser-0.8)
+        ("rust-wasmparser" ,rust-wasmparser-0.224)
+        ("rust-wasmtime-c-api-impl" ,rust-wasmtime-c-api-impl-29)
+        ("rust-webbrowser" ,rust-webbrowser-1)
         ("rust-which" ,rust-which-4))
       #:cargo-development-inputs
-      `(("rust-ctor" ,rust-ctor-0.1)
-        ("rust-pretty-assertions" ,rust-pretty-assertions-0.7)
+      `(("rust-bindgen" ,rust-bindgen-0.71)
+        ("rust-ctor" ,rust-ctor-0.1)
+        ("rust-pretty-assertions" ,rust-pretty-assertions-1)
         ("rust-rand" ,rust-rand-0.8)
         ("rust-tempfile" ,rust-tempfile-3)
         ("rust-unindent" ,rust-unindent-0.2))
@@ -221,10 +238,10 @@ This package includes the @code{libtree-sitter} runtime library.")
       #~(modify-phases %standard-phases
           (add-after 'unpack 'patch-node
             (lambda _
-              (substitute* "cli/src/generate/mod.rs"
-                (("Command::new\\(\"node\"\\)")
+              (substitute* "cli/src/main.rs"
+                (("default_value = \"node\"")
                  (string-append
-                  "Command::new(\"" #$node-lts "/bin/node\")")))))
+                  "default_value = \"" #$node-lts "/bin/node\")")))))
           (add-after 'unpack 'patch-dot
             (lambda _
               (substitute* "cli/src/util.rs"
